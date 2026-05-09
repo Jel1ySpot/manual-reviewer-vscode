@@ -1,0 +1,74 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run compile
+      - run: pnpm test
+      - name: Package
+        run: pnpm dlx @vscode/vsce package --no-dependencies
+      - name: Upload vsix
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-reviewer-vscode-vsix
+          path: '*.vsix'
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run compile
+      - name: Package
+        run: pnpm dlx @vscode/vsce package --no-dependencies
+      - name: Publish to VS Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -n "$VSCE_PAT" ]; then
+            pnpm dlx @vscode/vsce publish --no-dependencies --pat "$VSCE_PAT"
+          else
+            echo "VSCE_PAT not set; skipping Marketplace publish"
+          fi
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -n "$OVSX_PAT" ]; then
+            pnpm dlx ovsx publish --pat "$OVSX_PAT" *.vsix
+          else
+            echo "OVSX_PAT not set; skipping Open VSX publish"
+          fi
+      - name: Attach vsix to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.vsix'
+          fail_on_unmatched_files: true

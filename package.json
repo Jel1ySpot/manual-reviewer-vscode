@@ -1,0 +1,236 @@
+{
+  "name": "manual-reviewer",
+  "displayName": "Manual Reviewer",
+  "description": "Tired of letting LLMs review LLM-written code? Manual Reviewer lets you point at code, write what to change, and hand the AI agent a checklist — boss your AI employees around like a real client.",
+  "version": "0.1.0",
+  "publisher": "jel1yspot",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "code-review",
+    "manual-review",
+    "comments",
+    "prompt",
+    "ai",
+    "agent",
+    "copilot",
+    "cursor"
+  ],
+  "main": "./out/src/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "mreview.addAtSelection",
+        "title": "Manual Reviewer: Add Comment for Selection"
+      },
+      {
+        "command": "mreview.list",
+        "title": "Manual Reviewer: Show List"
+      },
+      {
+        "command": "mreview.removeEntry",
+        "title": "Manual Reviewer: Remove Entry",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "mreview.editEntry",
+        "title": "Manual Reviewer: Edit Entry",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "mreview.jumpToEntry",
+        "title": "Manual Reviewer: Jump to Entry"
+      },
+      {
+        "command": "mreview.clearSession",
+        "title": "Manual Reviewer: Clear Session",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "mreview.export",
+        "title": "Manual Reviewer: Export Prompt",
+        "icon": "$(export)"
+      },
+      {
+        "command": "mreview.exportToFile",
+        "title": "Manual Reviewer: Export to File Only"
+      },
+      {
+        "command": "mreview.exportToClipboard",
+        "title": "Manual Reviewer: Export to Clipboard Only"
+      },
+      {
+        "command": "mreview.exportToAgent",
+        "title": "Manual Reviewer: Send to Agent…"
+      },
+      {
+        "command": "mreview.addEntryFromTitle",
+        "title": "Manual Reviewer: Add",
+        "icon": "$(add)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "mreview.addAtSelection",
+        "key": "ctrl+shift+'",
+        "mac": "cmd+shift+'"
+      },
+      {
+        "command": "mreview.export",
+        "key": "ctrl+shift+i",
+        "mac": "cmd+shift+i",
+        "when": "!terminalFocus"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mreviewContainer",
+          "title": "Comments",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "mreviewContainer": [
+        {
+          "id": "mreview.entries",
+          "name": "Entries",
+          "icon": "media/icon.svg",
+          "contextualTitle": "Comments"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "mreview.addEntryFromTitle",
+          "when": "view == mreview.entries",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mreview.export",
+          "when": "view == mreview.entries",
+          "group": "navigation@2"
+        },
+        {
+          "command": "mreview.clearSession",
+          "when": "view == mreview.entries",
+          "group": "navigation@3"
+        },
+        {
+          "command": "mreview.exportToFile",
+          "when": "view == mreview.entries",
+          "group": "1_export@1"
+        },
+        {
+          "command": "mreview.exportToClipboard",
+          "when": "view == mreview.entries",
+          "group": "1_export@2"
+        },
+        {
+          "command": "mreview.exportToAgent",
+          "when": "view == mreview.entries",
+          "group": "1_export@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "mreview.editEntry",
+          "when": "view == mreview.entries && viewItem == commentEntry",
+          "group": "inline@1"
+        },
+        {
+          "command": "mreview.removeEntry",
+          "when": "view == mreview.entries && viewItem == commentEntry",
+          "group": "inline@2"
+        },
+        {
+          "command": "mreview.jumpToEntry",
+          "when": "view == mreview.entries && viewItem == commentEntry",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Manual Reviewer",
+      "properties": {
+        "mreview.exportPath": {
+          "type": "string",
+          "default": ".mreview/PROMPT.md",
+          "description": "Workspace-relative path of the exported prompt file."
+        },
+        "mreview.archiveOnExport": {
+          "type": "boolean",
+          "default": true,
+          "description": "Move the previous PROMPT.md into .mreview/archive/ on export."
+        },
+        "mreview.archiveOnClear": {
+          "type": "boolean",
+          "default": true,
+          "description": "Move session.json into .mreview/archive/ on clear."
+        },
+        "mreview.includeGitInfo": {
+          "type": "boolean",
+          "default": true,
+          "description": "Capture git branch/sha/dirty when adding entries."
+        },
+        "mreview.agents.copilot.command": {
+          "type": "string",
+          "default": "workbench.action.chat.open",
+          "description": "Command ID used to send a prompt to GitHub Copilot Chat."
+        },
+        "mreview.agents.cursor.command": {
+          "type": "string",
+          "default": "",
+          "description": "Override command ID used to send a prompt to Cursor (default tries several IDs)."
+        },
+        "mreview.agents.windsurf.command": {
+          "type": "string",
+          "default": "",
+          "description": "Override command ID used to send a prompt to Windsurf."
+        },
+        "mreview.agents.cline.command": {
+          "type": "string",
+          "default": "cline.newTask",
+          "description": "Command ID used to start a Cline task."
+        },
+        "mreview.agents.rooCode.command": {
+          "type": "string",
+          "default": "roo-cline.newTask",
+          "description": "Command ID used to start a Roo Code task."
+        },
+        "mreview.agents.continue.command": {
+          "type": "string",
+          "default": "continue.focusContinueInput",
+          "description": "Command ID used to focus the Continue input."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "node ./out/test/runUnit.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@10.22.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jel1yspot/manual-reviewer-vscode"
+  }
+}
